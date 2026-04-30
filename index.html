@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML & CSS 程式碼遊樂場</title>
+    <style>
+        /* ========================================================
+           排版與基本樣式 (用來讓這個教學網站可以正常運作的程式碼)
+           ======================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: '微軟正黑體', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 左右分割畫面 */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        @media (min-width: 800px) {
+            .app-container {
+                flex-direction: row;
+                height: 100vh;
+                overflow: hidden;
+            }
+        }
+
+        /* 左邊：學生可以玩的網頁區塊 */
+        .playground {
+            flex: 6;
+            padding: 40px;
+            overflow-y: auto;
+            background-color: #ffffff;
+            border-right: 2px solid #ddd;
+        }
+
+        /* 右邊：程式碼檢查器 (透視鏡) */
+        .inspector {
+            flex: 4;
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ========================================================
+           互動「透視」樣式
+           ======================================================== */
+        .inspectable {
+            cursor: pointer;
+            transition: outline 0.2s ease-in-out, background-color 0.2s;
+            position: relative;
+        }
+
+        .inspectable:hover {
+            outline: 2px dashed #3498db;
+            outline-offset: 4px;
+            z-index: 10;
+        }
+
+        .inspectable.active {
+            outline: 3px solid #3498db;
+            outline-offset: 4px;
+            background-color: rgba(52, 152, 219, 0.1);
+            z-index: 20;
+        }
+
+        /* ========================================================
+           學生網頁樣式 (基本 HTML/CSS 示範)
+           ======================================================== */
+
+        .main-heading { color: #2c3e50; font-size: 2.5rem; margin-bottom: 15px; }
+        .normal-text { font-size: 1.1rem; line-height: 1.8; color: #444; margin-bottom: 20px; }
+        .container-box { background-color: #f9f9f9; border: 1px solid #ccc; padding: 20px; margin: 20px 0; }
+        .profile-image { border: 3px solid #888; border-radius: 8px; width: 150px; height: 150px; object-fit: cover; display: block; margin: 0 auto 20px auto; }
+        .basic-button { background-color: #3498db; color: white; border: none; padding: 10px 20px; font-size: 1.1rem; cursor: pointer; }
+        .basic-button:hover { background-color: #2980b9; }
+        .basic-list { font-size: 1.1rem; color: #333; margin-left: 30px; margin-bottom: 20px; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: white; }
+        .data-table th, .data-table td { border: 1px solid #999; padding: 10px; text-align: left; }
+        .data-table th { background-color: #e0e0e0; color: #333; }
+
+        /* 辭典與原始碼區塊樣式 */
+        .dictionary-section, .full-code-section {
+            margin-top: 50px;
+            border-top: 3px double #ccc;
+            padding-top: 30px;
+        }
+
+        .dictionary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .dictionary-table th { background-color: #34495e; color: white; padding: 8px; }
+        .dictionary-table td { border: 1px solid #ddd; padding: 8px; }
+        .dictionary-table tr:nth-child(even) { background-color: #f2f2f2; }
+
+        .browser-box {
+            background-color: #fff9db;
+            border-left: 5px solid #f1c40f;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .btn-show-code {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #full-code-display {
+            display: none;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Consolas', monospace;
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            color: #333;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* ========================================================
+           程式碼視窗樣式
+           ======================================================== */
+        .code-window-header {
+            background-color: #1e2227;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            color: #abb2bf;
+            font-family: 'Consolas', monospace;
+            border-bottom: 1px solid #3e4451;
+            margin-top: 15px;
+        }
+
+        .code-block {
+            background-color: #21252b;
+            padding: 15px;
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        code { color: #98c379; }
+        .html-code { color: #e06c75; }
+        .css-code { color: #61afef; }
+        h2.inspector-title { color: #61afef; margin-bottom: 10px; font-size: 1.8rem; }
+        p.inspector-desc { font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px; color: #abb2bf; }
+        #empty-state { text-align: center; margin-top: 50px; }
+        #empty-state h3 { color: #61afef; font-size: 1.5rem; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- 左邊：學生可以互動的網頁 -->
+        <main class="playground">
+
+            <h1 class="inspectable main-heading" data-id="main-title">
+                歡迎來到網頁的世界！
+            </h1>
+
+            <p class="inspectable normal-text" data-id="paragraph">
+                你在網站上看到的所有東西都是用 <strong>HTML</strong> 和 <strong>CSS</strong> 做成的。試著點擊左邊有藍色虛線框的東西，右邊會出現秘密程式碼喔！
+            </p>
+
+            <div class="inspectable container-box" data-id="the-box">
+                <img src="https://images.unsplash.com/photo-1593483316242-efb5420596ca?auto=format&fit=crop&w=300&q=80"
+                     alt="可愛的狗狗"
+                     class="inspectable profile-image"
+                     data-id="profile-pic"
+                     onerror="this.src='https://via.placeholder.com/150/cccccc/000000?text=狗狗照片'">
+
+                <h2 class="inspectable" data-id="sub-heading" style="margin-bottom: 10px; color: #2c3e50;">我的超讚興趣</h2>
+
+                <ul class="inspectable basic-list" data-id="unordered-list">
+                    <li>寫網頁程式</li>
+                    <li>玩電玩遊戲</li>
+                    <li>吃好吃的披薩</li>
+                </ul>
+
+                <button class="inspectable basic-button" data-id="action-btn">
+                    點擊我！
+                </button>
+            </div>
+
+            <table class="inspectable data-table" data-id="data-table">
+                <tr>
+                    <th>玩家代號</th>
+                    <th>最高分數</th>
+                    <th>牌階</th>
+                </tr>
+                <tr>
+                    <td>像素忍者 (PixelNinja)</td>
+                    <td>9,001</td>
+                    <td>鑽石 💎</td>
+                </tr>
+                <tr>
+                    <td>程式碼巫師 (CodeWizard)</td>
+                    <td>8,450</td>
+                    <td>黃金 🥇</td>
+                </tr>
+            </table>
+
+            <!-- 網頁語法小辭典區塊 -->
+            <div class="dictionary-section">
+                <h3 style="margin-bottom: 15px; color: #e67e22;">📖 網頁語法小辭典 (給學生的英文翻譯)</h3>
+                <table class="dictionary-table">
+                    <thead>
+                        <tr>
+                            <th>英文單字 (程式碼)</th>
+                            <th>中文意思</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><b>color</b></td><td>顏色</td></tr>
+                        <tr><td><b>font-size</b></td><td>字體大小</td></tr>
+                        <tr><td><b>background-color</b></td><td>背景顏色</td></tr>
+                        <tr><td><b>border</b></td><td>邊框</td></tr>
+                        <tr><td><b>border-radius</b></td><td>邊框半徑 (圓角)</td></tr>
+                        <tr><td><b>margin / padding</b></td><td>外邊距 / 內邊距</td></tr>
+                        <tr><td><b>img / table / button</b></td><td>圖片 / 表格 / 按鈕</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 新增：完整程式碼展示區 -->
+            <div class="full-code-section">
+                <h3 style="margin-bottom: 15px; color: #27ae60;">🚀 瀏覽器是怎麼運作的？</h3>
+
+                <div class="browser-box">
+                    💡 <b>老師的小叮嚀：</b><br>
+                    瀏覽器（像 Chrome 或 Edge）就像一個「組裝工人」。它會讀取下面這段程式碼，將 HTML 和 CSS 結合在一起。你可以點擊下面按鈕，**複製整段程式碼**到「記事本」，存成「`myweb.html`」，然後用瀏覽器打開，你就能在自己的電腦上看到網頁了！
+                </div>
+
+                <button class="btn-show-code" onclick="toggleFullCode()">顯示/隱藏 完整的網頁設計圖 (HTML + CSS)</button>
+
+                <div id="full-code-display">
+&lt;!DOCTYPE html&gt;
+&lt;html lang="zh-TW"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;我的第一個網頁&lt;/title&gt;
+  &lt;style&gt;
+    /* 這裡就是 CSS (設計圖的油漆與裝飾) */
+    body { font-family: '微軟正黑體', sans-serif; background-color: #f4f4f5; color: #333; padding: 20px; }
+    .main-heading { color: #2c3e50; font-size: 40px; margin-bottom: 15px; }
+    .normal-text { font-size: 18px; line-height: 1.8; color: #444; margin-bottom: 20px; }
+    .container-box { background-color: #f9f9f9; border: 1px solid #ccc; padding: 20px; margin: 20px 0; }
+    .profile-image { border: 3px solid #888; border-radius: 8px; width: 150px; height: 150px; object-fit: cover; display: block; margin: 0 auto 20px auto; }
+    .basic-list { font-size: 18px; color: #333; margin-left: 30px; margin-bottom: 20px; }
+    .basic-button { background-color: #3498db; color: white; border: none; padding: 10px 20px; font-size: 18px; cursor: pointer; }
+    .basic-button:hover { background-color: #2980b9; }
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: white; }
+    .data-table th, .data-table td { border: 1px solid #999; padding: 10px; text-align: left; }
+    .data-table th { background-color: #e0e0e0; color: #333; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;!-- 這裡就是 HTML (設計圖的骨架與內容) --&gt;
+  &lt;h1 class="main-heading"&gt;歡迎來到網頁的世界！&lt;/h1&gt;
+
+  &lt;p class="normal-text"&gt;
+    你在網站上看到的所有東西都是用 &lt;strong&gt;HTML&lt;/strong&gt; 和 &lt;strong&gt;CSS&lt;/strong&gt; 做成的。試著點擊左邊有藍色虛線框的東西，右邊會出現秘密程式碼喔！
+  &lt;/p&gt;
+
+  &lt;div class="container-box"&gt;
+    &lt;img src="https://images.unsplash.com/photo-1593483316242-efb5420596ca?auto=format&fit=crop&w=300&q=80" alt="可愛的狗狗" class="profile-image"&gt;
+
+    &lt;h2 style="margin-bottom: 10px; color: #2c3e50;"&gt;我的超讚興趣&lt;/h2&gt;
+
+    &lt;ul class="basic-list"&gt;
+      &lt;li&gt;寫網頁程式&lt;/li&gt;
+      &lt;li&gt;玩電玩遊戲&lt;/li&gt;
+      &lt;li&gt;吃好吃的披薩&lt;/li&gt;
+    &lt;/ul&gt;
+
+    &lt;button class="basic-button"&gt;點擊我！&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;table class="data-table"&gt;
+    &lt;tr&gt;
+      &lt;th&gt;玩家代號&lt;/th&gt;
+      &lt;th&gt;最高分數&lt;/th&gt;
+      &lt;th&gt;牌階&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;像素忍者 (PixelNinja)&lt;/td&gt;
+      &lt;td&gt;9,001&lt;/td&gt;
+      &lt;td&gt;鑽石 💎&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;程式碼巫師 (CodeWizard)&lt;/td&gt;
+      &lt;td&gt;8,450&lt;/td&gt;
+      &lt;td&gt;黃金 🥇&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+                </div>
+            </div>
+
+        </main>
+
+        <!-- 右邊：程式碼透視鏡 -->
+        <aside class="inspector">
+            <div id="empty-state">
+                <h3>👈 程式碼透視鏡！</h3>
+                <p>請點擊左邊的元素，看看它們背後的 HTML 和 CSS 喔。</p>
+            </div>
+
+            <div id="data-state" style="display: none;">
+                <h2 id="ins-title" class="inspector-title">元素名稱</h2>
+                <p id="ins-desc" class="inspector-desc">說明會顯示在這裡...</p>
+
+                <div class="code-window-header">index.html (結構)</div>
+                <div class="code-block html-code"><pre><code id="ins-html"></code></pre></div>
+
+                <div class="code-window-header">style.css (裝飾)</div>
+                <div class="code-block css-code"><pre><code id="ins-css"></code></pre></div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const elementsData = {
+            'main-title': {
+                name: '大標題 (<h1>)',
+                html: '<h1 class="main-heading">\n  歡迎來到網頁的世界！\n</h1>',
+                css: 'color: #2c3e50; \nfont-size: 2.5rem; \nmargin-bottom: 15px;',
+                desc: '<h1> 代表「標題 1」。CSS 裡的 color 是顏色，font-size 是字體大小。'
+            },
+            'paragraph': {
+                name: '段落文字 (<p>)',
+                html: '<p class="normal-text">\n  你在網站上看到的所有東西...\n</p>',
+                css: 'font-size: 1.1rem; \nline-height: 1.8; \ncolor: #444;',
+                desc: '<p> 代表「段落」。line-height 是行高，決定每一行之間的距離。'
+            },
+            'the-box': {
+                name: '隱形盒子 (<div>)',
+                html: '<div class="container-box">\n  <!-- 裡面裝其他的東西 -->\n</div>',
+                css: 'background-color: #f9f9f9;\nborder: 1px solid #ccc;\npadding: 20px;\nmargin: 20px 0;',
+                desc: '<div> 就像一個箱子。padding 是箱子內部的空間，margin 是箱子外面要跟別人留的距離。'
+            },
+            'profile-pic': {
+                name: '圖片 (<img>)',
+                html: '<img src="dog.jpg" alt="狗狗" class="profile-image">',
+                css: 'border: 3px solid #888;\nborder-radius: 8px;\nwidth: 150px;\nheight: 150px;',
+                desc: '<img> 用來放圖片。border-radius 可以讓圖片的邊角變圓圓的。'
+            },
+            'sub-heading': {
+                name: '副標題 (<h2>)',
+                html: '<h2>我的超讚興趣</h2>',
+                css: 'margin-bottom: 10px;\ncolor: #2c3e50;',
+                desc: '<h2> 是第二大的標題，字體會比 h1 小一點。'
+            },
+            'action-btn': {
+                name: '按鈕 (<button>)',
+                html: '<button class="basic-button">\n  點擊我！\n</button>',
+                css: 'background-color: #3498db;\ncolor: white;\nborder: none;\npadding: 10px 20px;',
+                desc: '<button> 就是按鈕。用 background-color 設定底色。'
+            },
+            'data-table': {
+                name: '資料表格 (<table>)',
+                html: '<table>\n  <tr>\n    <th>玩家代號</th>\n    <th>最高分數</th>\n  </tr>\n  <tr>\n    <td>像素忍者</td>\n    <td>9,001</td>\n  </tr>\n</table>',
+                css: 'border-collapse: collapse;\n\nth, td {\n  border: 1px solid #999;\n  padding: 10px;\n}',
+                desc: '<table> 建立表格。tr 是橫列，th 是標題格，td 是資料格。'
+            },
+            'unordered-list': {
+                name: '清單 (<ul> 與 <li>)',
+                html: '<ul class="basic-list">\n  <li>寫網頁程式</li>\n  <li>玩電玩遊戲</li>\n</ul>',
+                css: 'margin-left: 30px;\nmargin-bottom: 20px;',
+                desc: '<ul> 是無序清單，li 是裡面的每一個項目。'
+            }
+        };
+
+        // 切換完整程式碼的顯示
+        function toggleFullCode() {
+            const display = document.getElementById('full-code-display');
+            if (display.style.display === 'block') {
+                display.style.display = 'none';
+            } else {
+                display.style.display = 'block';
+            }
+        }
+
+        document.querySelectorAll('.inspectable').forEach(element => {
+            element.addEventListener('click', function(event) {
+                event.stopPropagation();
+                document.querySelectorAll('.inspectable').forEach(item => item.classList.remove('active'));
+                this.classList.add('active');
+                const id = this.getAttribute('data-id');
+                const data = elementsData[id];
+                if (data) {
+                    document.getElementById('empty-state').style.display = 'none';
+                    document.getElementById('data-state').style.display = 'block';
+                    document.getElementById('ins-title').innerText = data.name;
+                    document.getElementById('ins-desc').innerText = data.desc;
+                    document.getElementById('ins-html').textContent = data.html;
+                    document.getElementById('ins-css').textContent = data.css;
+                }
+            });
+        });
+
+        document.querySelector('.playground').addEventListener('click', function(e) {
+            if (e.target.closest('.inspectable')) return;
+            document.querySelectorAll('.inspectable').forEach(item => item.classList.remove('active'));
+            document.getElementById('empty-state').style.display = 'block';
+            document.getElementById('data-state').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
